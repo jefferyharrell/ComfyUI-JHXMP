@@ -121,6 +121,7 @@ class JHSaveImageWithXMPMetadata:
             keywords_list = []
             if keywords:
                 keywords_list = keywords.split(", ")
+            keywords_list = list(set(keywords_list))
             dc_subject = etree.SubElement(rdf_description, "{http://purl.org/dc/elements/1.1/}subject")
             seq = etree.SubElement(dc_subject, "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Seq")
             for keyword in keywords_list:

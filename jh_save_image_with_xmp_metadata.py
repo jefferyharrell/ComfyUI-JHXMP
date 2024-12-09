@@ -41,24 +41,13 @@ class JHSaveImageWithXMPMetadata:
     CATEGORY = "JHXMP"
     OUTPUT_NODE = True
 
-    def save_images(self, images, filename_prefix="ComfyUI",
-                    title=None,
-                    positive_prompt=None,
-                    negative_prompt=None,
-                    description=None,
-                    keywords=None,
-                    model_path=None,
-                    prompt=None, extra_pnginfo=None):
-        filename_prefix += self.prefix_append
-        full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(filename_prefix, self.output_dir, images[0].shape[1], images[0].shape[0])
-        results = list()
-
-        for (batch_number, image) in enumerate(images):
-            i = 255. * image.cpu().numpy()
-            img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
-
-            metadata = PngInfo()
-
+    def generate_xmp_metadata(self,
+                              title,
+                              positive_prompt,
+                              negative_prompt,
+                              description,
+                              keywords,
+                              model_path):
             # https://developer.adobe.com/xmp/docs/XMPSpecifications/
 
             namespaces = {
@@ -136,7 +125,30 @@ class JHSaveImageWithXMPMetadata:
             {xmp_string}
             <?xpacket end="w"?>"""
 
+            return xpacket_wrapped
+
+    def save_images(self,
+                    images,
+                    filename_prefix="ComfyUI",
+                    title=None,
+                    positive_prompt=None,
+                    negative_prompt=None,
+                    description=None,
+                    keywords=None,
+                    model_path=None,
+                    prompt=None, extra_pnginfo=None):
+        filename_prefix += self.prefix_append
+        full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(filename_prefix, self.output_dir, images[0].shape[1], images[0].shape[0])
+        results = list()
+
+        for (batch_number, image) in enumerate(images):
+            i = 255. * image.cpu().numpy()
+            img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
+
+            metadata = PngInfo()
+
             # Add the metadata to the image
+            xpacket_wrapped = self.generate_xmp_metadata(title, positive_prompt, negative_prompt, description, keywords, model_path)
             metadata.add_text("XML:com.adobe.xmp", xpacket_wrapped)
 
             # Add other metadata (this comes straight from SaveImage)

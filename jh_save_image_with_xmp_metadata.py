@@ -22,6 +22,7 @@ class JHSaveImageWithXMPMetadata:
             "required": {
                 "images": ("IMAGE", {"tooltip": "The images to save."}),
                 "filename_prefix": ("STRING", {"default": "ComfyUI", "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."}),
+                "embed_workflow": ("BOOLEAN", {"default": True})
             },
             "optional": {
                 "title": ("STRING",),
@@ -130,6 +131,7 @@ class JHSaveImageWithXMPMetadata:
     def save_images(self,
                     images,
                     filename_prefix="ComfyUI",
+                    embed_workflow=True,
                     title=None,
                     positive_prompt=None,
                     negative_prompt=None,
@@ -145,22 +147,24 @@ class JHSaveImageWithXMPMetadata:
             i = 255. * image.cpu().numpy()
             img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
 
-            metadata = PngInfo()
+            pnginfo = PngInfo()
 
             # Add the metadata to the image
             xpacket_wrapped = self.generate_xmp_metadata(title, positive_prompt, negative_prompt, description, keywords, model_path)
-            metadata.add_text("XML:com.adobe.xmp", xpacket_wrapped)
+            pnginfo.add_text("XML:com.adobe.xmp", xpacket_wrapped)
 
             # Add other metadata (this comes straight from SaveImage)
-            if prompt is not None:
-                metadata.add_text("prompt", json.dumps(prompt))
-            if extra_pnginfo is not None:
-                for x in extra_pnginfo:
-                    metadata.add_text(x, json.dumps(extra_pnginfo[x]))
+            if embed_workflow:
+                if prompt is not None:
+                    pnginfo.add_text("prompt", json.dumps(prompt))
+                if extra_pnginfo is not None:
+                    for x in extra_pnginfo:
+                        print(f"x = {x}")
+                        pnginfo.add_text(x, json.dumps(extra_pnginfo[x]))
 
             filename_with_batch_num = filename.replace("%batch_num%", str(batch_number))
             file = f"{filename_with_batch_num}_{counter:05}_.png"
-            img.save(os.path.join(full_output_folder, file), pnginfo=metadata, compress_level=self.compress_level)
+            img.save(os.path.join(full_output_folder, file), pnginfo=pnginfo, compress_level=self.compress_level)
             results.append({
                 "filename": file,
                 "subfolder": subfolder,

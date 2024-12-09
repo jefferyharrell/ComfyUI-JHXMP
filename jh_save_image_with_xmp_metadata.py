@@ -49,7 +49,7 @@ class JHSaveImageWithXMPMetadata:
     CATEGORY = "JHXMP"
     OUTPUT_NODE = True
 
-    def generate_xmp_metadata(self,
+    def generate_xmp_string(self,
                               title,
                               positive_prompt,
                               negative_prompt,
@@ -163,11 +163,12 @@ class JHSaveImageWithXMPMetadata:
             filename_with_batch_num = filename.replace("%batch_num%", str(batch_number))
             file = f"{filename_with_batch_num}_{counter:05}_.{filename_extension}"
 
+            xmp_string = self.generate_xmp_string(title, positive_prompt, negative_prompt, description, keywords, model_path)
+
             match image_type:
                 case JHSupportedImageTypes.PNG.value:
                     pnginfo = PngInfo()
-                    xpacket_wrapped = self.generate_xmp_metadata(title, positive_prompt, negative_prompt, description, keywords, model_path)
-                    pnginfo.add_text("XML:com.adobe.xmp", xpacket_wrapped)
+                    pnginfo.add_text("XML:com.adobe.xmp", xmp_string)
 
                     if embed_workflow:
                         if prompt is not None:
@@ -178,8 +179,6 @@ class JHSaveImageWithXMPMetadata:
                     img.save(os.path.join(full_output_folder, file), pnginfo=pnginfo, compress_level=self.compress_level)
  
                 case JHSupportedImageTypes.WEBP.value:
-                    xpacket_wrapped = self.generate_xmp_metadata(title, positive_prompt, negative_prompt, description, keywords, model_path)
-
                     if embed_workflow:
                         exif_dict = {}
                         if prompt is not None:
@@ -193,7 +192,7 @@ class JHSaveImageWithXMPMetadata:
                             exif[exif_addr] = "{}:{}".format(key, json.dumps(exif_dict[key]))
                             exif_addr -= 1
                     
-                    img.save(os.path.join(full_output_folder, file), exif=exif, xmp=xpacket_wrapped.encode("utf-8"))
+                    img.save(os.path.join(full_output_folder, file), exif=exif, xmp=xmp_string.encode("utf-8"))
 
 
             results.append({

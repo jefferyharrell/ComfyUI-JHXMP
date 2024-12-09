@@ -118,6 +118,7 @@ class JHSaveImageWithXMPMetadata:
                 li.text = Path(model_path).stem
 
             # dc:subject
+            keywords_set = set()
             if keywords:
                 keywords_set = set(keywords.split(", "))
             dc_subject = etree.SubElement(rdf_description, "{http://purl.org/dc/elements/1.1/}subject")
